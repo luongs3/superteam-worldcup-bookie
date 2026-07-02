@@ -1,0 +1,17 @@
+{
+  "name": "beat-the-bookie",
+  "version": "1.0.0",
+  "description": "Beat the Bookie — a Telegram-native World Cup fan game. Predict in-play markets against TxODDS' de-margined line; score is Closing-Line Value (did the sharp market later agree with you), not luck. On-chain leaderboard = an unfakeable football-IQ record. Built for the Superteam x TxODDS World Cup hackathon (Consumer & Fan Experiences track).",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node scripts/test.js",
+    "start": "node src/main.js",
+    "serve": "node src/main.js"
+  },
+  "keywords": ["solana", "txodds", "worldcup", "telegram", "fan-game", "clv", "leaderboard"],
+  "license": "MIT",
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4"
+  }
+}
