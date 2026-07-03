@@ -14,9 +14,10 @@ function renderBoard(rows) {
   const medal = (i) => ["🥇", "🥈", "🥉"][i] || (i + 1);
   const rowsHtml = rows.slice(0, 20).map((u, i) => {
     const name = String(u.userId).split(":")[1] || u.userId;
-    const clvClass = u.avgClvPp > 0 ? "clv-pos" : u.avgClvPp < 0 ? "clv-neg" : "";
-    return `<tr><td class="rank">${medal(i)}</td><td>${esc(name)}</td><td class="pts">${u.points}</td>
-      <td>${u.correct}/${u.picks - u.voided}</td><td class="${clvClass}">${(u.avgClvPp * 100).toFixed(1)}pp</td></tr>`;
+    const clvPct = Math.round(u.avgClvPp * 1000) / 10 || 0; // clamp -0 -> 0
+    const clvClass = clvPct > 0 ? "clv-pos" : clvPct < 0 ? "clv-neg" : "";
+    return `<tr><td class="rank">${medal(i)}</td><td>${esc(name)}</td><td class="pts">${fmtPts(u.points)}</td>
+      <td>${u.correct}/${u.picks - u.voided}</td><td class="${clvClass}">${clvPct.toFixed(1)}pp</td></tr>`;
   }).join("");
   boardWrap.innerHTML = `<table><thead><tr><th></th><th>Player</th><th>Points</th><th>Record</th><th>Line-skill</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
 }
@@ -34,9 +35,9 @@ function pushEvent(kind, data) {
   div.className = "ev";
   let label = kind, detail = "";
   if (kind === "pick") { label = "pick"; detail = `${nameOf(data.userId)} → ${data.outcome} on ${esc(data.label)} @ ${(data.entryProb * 100).toFixed(1)}%`; }
-  else if (kind === "resolved") { label = "resolved"; detail = `fixture ${data.fixtureId} ${esc(data.market)} → ${data.outcome}`; }
-  else if (kind === "scored") { label = "scored"; detail = `${nameOf(data.userId)} ${data.correct ? "✅" : data.correct === false ? "❌" : "↩️"} ${data.points >= 0 ? "+" : ""}${data.points}pts (total ${data.total})`; }
-  else if (kind === "leaderboard-anchored") { label = "anchored"; detail = data.dryRun ? `memo ready (dry-run): ${data.memo}` : `⛓️ <a href="${data.explorer}" target="_blank" style="color:var(--gold)">on-chain</a>`; }
+  else if (kind === "resolved") { label = "resolved"; detail = `fixture ${data.fixtureId} · ${esc(marketPretty(data.market))} → ${data.outcome}`; }
+  else if (kind === "scored") { label = "scored"; detail = `${nameOf(data.userId)} ${data.correct ? "✅" : data.correct === false ? "❌" : "↩️"} ${data.points >= 0 ? "+" : ""}${fmtPts(data.points)}pts (total ${fmtPts(data.total)})`; }
+  else if (kind === "leaderboard-anchored") { label = "anchored"; detail = data.dryRun ? `memo ready (dry-run): ${data.memo}` : `⛓️ <a href="${data.explorer}" target="_blank" style="color:var(--gold)">on-chain · ${esc(String(data.signature).slice(0, 8))}…${esc(String(data.signature).slice(-6))}</a>`; }
   else return;
   div.innerHTML = `<span class="k ${label}">${label}</span>${detail}`;
   feed.prepend(div);
@@ -44,6 +45,13 @@ function pushEvent(kind, data) {
 }
 
 function nameOf(userId) { return esc(String(userId).split(":")[1] || userId); }
+function marketPretty(m) {
+  const [type, params] = String(m).split("|");
+  if (type.startsWith("1X2")) return "Match result (1X2)";
+  if (type.startsWith("OVERUNDER")) return `Over/Under ${(params || "").replace("line=", "")} goals`;
+  return type.replaceAll("_", " ").toLowerCase();
+}
+function fmtPts(n) { const v = Number(n) || 0; return (Math.round(v * 100) / 100).toFixed(2).replace(/\.00$/, ""); }
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
 const es = new EventSource("/events");
